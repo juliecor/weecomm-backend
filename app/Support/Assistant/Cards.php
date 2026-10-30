@@ -1,0 +1,319 @@
+<?php
+
+namespace App\Support\Assistant;
+
+use App\Models\Offer;
+use App\Models\OfferResponse;
+use App\Models\Project;
+use App\Models\RequirementType;
+use App\Models\Unit;
+use App\Models\UnitType;
+use App\Models\User;
+use App\Support\Reports\SalesReport;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+
+/**
+ * The cards the AI shows under an answer: units, offers (buyers), projects
+ * and payment schedules. An answer keeps only references (ids, and a payment's
+ * terms); the cards are drawn from the live data every time, only from the
+ * person's own realty, and agents only ever get their own offers.
+ */
+class Cards
+{
+    /** At most this many cards of each kind under one answer. */
+    public const MAX = ['unit' => 6, 'offer' => 6, 'project' => 6, 'payment' => 3, 'map' => 2, 'action' => 3, 'report' => 1];
+
+    /**
+     * The list with one more card, unless it's already there or that kind is full.
+     *
+     * @param  array<int, array<string, mixed>>  $refs
+     * @param  array<string, mixed>  $ref  e.g. ['type' => 'unit', 'id' => 12]
+     * @return array<int, array<string, mixed>>
+     */
+    public static function add(array $refs, array $ref): array
+    {
+        $same = collect($refs)->where('type', $ref['type']);
+        $there = in_array($ref['type'], ['payment', 'action', 'report'], true) ? $same->contains(fn (array $r) => $r == $ref) : $same->contains('id', $ref['id']);
+        // A second map of the same project replaces the first (its marked lots are the newer ask).
+        if ($ref['type'] === 'map' && $there) {
+            return collect($refs)->map(fn (array $r) => $r['type'] === 'map' && $r['id'] === $ref['id'] ? $ref : $r)->all();
+        }
+        if ($there || $same->count() >= self::MAX[$ref['type']]) {
+            return $refs;
+        }
+
+        return [...$refs, $ref];
+    }
+
+    /**
+     * The cards for these references, in order; anything gone (or not this person's to see) is left out.
+     *
+     * @param  array<int, mixed>  $refs
+     * @return array<int, array<string, mixed>>
+     */
+    public static function for(User $user, array $refs): array
+    {
+        $refs = collect($refs)->filter(fn ($r) => is_array($r) && isset(self::MAX[$r['type'] ?? '']))->values();
+        if ($refs->isEmpty()) {
+            return [];
+        }
+        $ids = fn (string $type, string $key = 'id') => $refs->where('type', $type)->pluck($key)->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+
+        $units = Unit::where('realty_id', $user->realty_id)->whereIn('id', [...$ids('unit'), ...$ids('payment', 'unit')])->with('project')->get()->keyBy('id');
+        $offers = Offer::where('realty_id', $user->realty_id)->when($user->role === User::ROLE_AGENT, fn ($q) => $q->where('agent_id', $user->id))
+            ->whereIn('id', $user->canUse('offers') ? $ids('offer') : [])->with(['project', 'unit', 'agent:id,name', 'responses', 'documents'])->get()->keyBy('id');
+        $maps = Project::where('realty_id', $user->realty_id)->whereIn('id', $ids('map'))->get()->keyBy('id');
+        $projects = Project::where('realty_id', $user->realty_id)->whereIn('id', [...$ids('project'), ...$ids('payment', 'project')])
+            ->withCount([
+                'units',
+                'units as available' => fn ($q) => $q->where('status', 'available'),
+                'units as reserved' => fn ($q) => $q->where('status', 'reserved'),
+                'units as sold' => fn ($q) => $q->where('status', 'sold'),
+                'units as offerable' => fn ($q) => $q->where('status', 'available')->whereNotNull('price'),
+                'paymentPlans',
+            ])
+            ->withMin('units', 'price')->withMax('units', 'price')->get()->keyBy('id');
+        $models = UnitType::whereIn('project_id', $units->pluck('project_id')->merge($offers->pluck('project_id'))->unique())->get();
+        $types = $offers->isEmpty() ? collect() : RequirementType::where('realty_id', $user->realty_id)->orderBy('sort')->orderBy('id')->get();
+
+        return $refs->map(fn (array $r) => match ($r['type']) {
+            'unit' => ($u = $units->get((int) ($r['id'] ?? 0))) ? self::unit($u, $models) : null,
+            'offer' => ($o = $offers->get((int) ($r['id'] ?? 0))) ? self::offer($o, $models, $types, $user) : null,
+            'project' => ($p = $projects->get((int) ($r['id'] ?? 0))) ? self::project($p) : null,
+            'payment' => self::payment($r, $units, $projects),
+            'map' => ($p = $maps->get((int) ($r['id'] ?? 0))) ? self::map($p, $r, $user) : null,
+            'action' => self::action($r, $user),
+            'report' => self::report($r, $user),
+        })->filter()->values()->all();
+    }
+
+    /**
+     * @param  Collection<int, UnitType>  $models
+     * @return array<string, mixed>
+     */
+    private static function unit(Unit $u, Collection $models): array
+    {
+        return [
+            'type' => 'unit',
+            'id' => $u->id,
+            'name' => $u->name,
+            'project' => ['id' => $u->project_id, 'name' => $u->project?->name, 'location' => $u->project?->location],
+            'unit_type' => $u->unit_type,
+            'floor' => $u->floor,
+            'area_sqm' => $u->area_sqm !== null ? (float) $u->area_sqm : null,
+            'price' => $u->price !== null ? (float) $u->price : null,
+            'status' => $u->status,
+            'photo' => $u->photo($models, $u->project),
+            // The New offer form lists available units with a price, in projects open for offers.
+            'can_offer' => $u->status === 'available' && $u->price !== null && $u->project?->status === 'active',
+        ];
+    }
+
+    /**
+     * A buyer's offer as the offers list shows it: answer, documents, opens.
+     *
+     * @param  Collection<int, UnitType>  $models
+     * @param  Collection<int, RequirementType>  $types
+     * @return array<string, mixed>
+     */
+    private static function offer(Offer $o, Collection $models, Collection $types, User $user): array
+    {
+        $latest = $o->responses->sortByDesc('created_at')->first();
+
+        return [
+            'type' => 'offer',
+            'id' => $o->id,
+            'code' => $o->code,
+            'buyer' => $o->buyer_name,
+            'status' => $o->status,
+            'project' => $o->project?->name,
+            'unit' => $o->unit?->name,
+            'price' => (float) $o->price,
+            'agent' => $user->role === User::ROLE_AGENT ? null : $o->agent?->name,
+            'photo' => $o->photo($models),
+            'sent' => $o->created_at->toIso8601String(),
+            'views' => (int) $o->views,
+            'last_viewed_at' => $o->last_viewed_at?->toIso8601String(),
+            'answer' => $latest ? ['kind' => $latest->kind, 'label' => OfferResponse::LABELS[$latest->kind] ?? $latest->kind, 'at' => $latest->created_at->toIso8601String()] : null,
+            'new_answers' => $o->responses->whereNull('seen_at')->count(),
+            'requirements' => $o->requirementSummary($types),
+            'approval_status' => $o->approval_status,
+            'unit_status' => $o->unit && $o->unit->status_offer_id === $o->id && $o->unit->status !== 'available' ? $o->unit->status : null,
+            'reservation_status' => $o->reservation_fee === null ? null : ($o->reservation_status ?? 'none'),
+            // The buyer's link, once the buyer can open it.
+            'url' => $o->status === 'active' && ! $o->awaitingApproval() ? Offer::url($o->code) : null,
+        ];
+    }
+
+    /**
+     * Something the AI set up for the person to do with one press: confirm a waiting reservation, or open
+     * the New offer form filled in. Drawn from the live data, so a reservation already confirmed says so.
+     *
+     * @param  array<string, mixed>  $r
+     * @return array<string, mixed>|null
+     */
+    private static function action(array $r, User $user): ?array
+    {
+        if (($r['kind'] ?? null) === 'confirm_reservation') {
+            $o = Offer::visibleTo($user)->whereNotNull('reservation_fee')->with(['unit:id,name', 'project:id,name'])->find((int) ($r['id'] ?? 0));
+            if (! $o) {
+                return null;
+            }
+
+            return [
+                'type' => 'action',
+                'kind' => 'confirm_reservation',
+                'offer' => ['id' => $o->id, 'code' => $o->code, 'buyer' => $o->buyer_name, 'unit' => $o->unit?->name, 'project' => $o->project?->name],
+                'fee' => (float) $o->reservation_fee,
+                'how' => $o->reservation_status === 'paid' ? 'paid online' : ($o->reservation_method === 'proof' ? 'proof of a bank/GCash payment sent' : 'not paid yet'),
+                'reference' => $o->reservation_reference,
+                'status' => $o->reservation_status,
+                'can_confirm' => $user->isDeveloperStaff() && $o->reservationWaiting(),
+            ];
+        }
+        if (($r['kind'] ?? null) === 'new_offer') {
+            $u = Unit::where('realty_id', $user->realty_id)->with('project:id,name,status')->find((int) ($r['id'] ?? 0));
+            if (! $u) {
+                return null;
+            }
+
+            return [
+                'type' => 'action',
+                'kind' => 'new_offer',
+                'unit' => ['id' => $u->id, 'name' => $u->name, 'status' => $u->status],
+                'project' => ['id' => $u->project_id, 'name' => $u->project?->name],
+                'price' => ($p = $u->offerPrice()) !== null ? (float) $p : null,
+                'buyer' => $r['buyer'] ?? null,
+                'email' => $r['email'] ?? null,
+                'phone' => $r['phone'] ?? null,
+                'fee' => isset($r['fee']) ? (float) $r['fee'] : null,
+                'can_offer' => $u->status === 'available' && $u->offerPrice() !== null && $u->project?->status === 'active',
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * A sales report for the dates the AI used, worked out again from the live data: the headline numbers, the
+     * highlights and the top projects and agents. The full report (every offer and deal) is on its page and PDF.
+     *
+     * @param  array<string, mixed>  $r
+     * @return array<string, mixed>|null
+     */
+    private static function report(array $r, User $user): ?array
+    {
+        if (! $user->canUse('offers') || ! is_string($r['from'] ?? null) || ! is_string($r['to'] ?? null)) {
+            return null;
+        }
+        try {
+            $report = SalesReport::for($user, null, $r['from'], $r['to'])->toArray();
+        } catch (\InvalidArgumentException) {
+            return null;
+        }
+
+        return [
+            'type' => 'report',
+            'period' => $report['period'],
+            'scope' => $report['prepared']['scope'],
+            'totals' => $report['totals'],
+            'previous' => $report['previous'],
+            'highlights' => $report['highlights'],
+            'projects' => array_slice($report['projects'], 0, 4),
+            'agents' => array_slice($report['agents'], 0, 4),
+            'counts' => ['projects' => count($report['projects']), 'agents' => count($report['agents']), 'deals' => count($report['deals']), 'offers' => count($report['offers'])],
+        ];
+    }
+
+    /**
+     * A project's site map with some lots marked (the dashboard's map: statuses, and who holds a lot for those allowed).
+     *
+     * @param  array<string, mixed>  $ref
+     * @return array<string, mixed>|null
+     */
+    private static function map(Project $p, array $ref, User $user): ?array
+    {
+        $map = $p->siteMap(viewer: $user);
+        if ($map === null || $map['lots'] === []) {
+            return null;
+        }
+        $known = collect($map['lots'])->pluck('id')->flip();
+        $lots = array_values(array_filter(array_map('intval', (array) ($ref['lots'] ?? [])), fn (int $id) => $known->has($id)));
+
+        return [
+            'type' => 'map',
+            'id' => $p->id,
+            'project' => ['id' => $p->id, 'name' => $p->name, 'location' => $p->location],
+            'map' => $map,
+            'lots' => array_slice($lots, 0, 12),
+            'model_photos' => $p->unitTypes()->get()->mapWithKeys(fn (UnitType $t) => [$t->name => $t->images ?? []])->all(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private static function project(Project $p): array
+    {
+        return [
+            'type' => 'project',
+            'id' => $p->id,
+            'name' => $p->name,
+            'location' => $p->location,
+            'stage' => $p->stage,
+            'open' => $p->status === 'active',
+            'photo' => $p->hero_urls[0] ?? $p->cover_url,
+            'units' => ['total' => (int) $p->units_count, 'available' => (int) $p->available, 'reserved' => (int) $p->reserved, 'sold' => (int) $p->sold],
+            'price' => $p->units_min_price === null ? null : ['min' => (float) $p->units_min_price, 'max' => (float) $p->units_max_price],
+            'plans' => (int) $p->payment_plans_count,
+            'can_offer' => $p->status === 'active' && $p->offerable > 0,
+        ];
+    }
+
+    /**
+     * A payment schedule, worked out again from its terms at the price the AI
+     * used (the same code that builds offers: a ₱20,000 fee stays ₱20,000),
+     * with the unit's price now if it changed since, and what "Make offer
+     * with these terms" needs.
+     *
+     * @param  array<string, mixed>  $r
+     * @param  Collection<int, Unit>  $units
+     * @param  Collection<int, Project>  $projects
+     * @return array<string, mixed>|null
+     */
+    private static function payment(array $r, Collection $units, Collection $projects): ?array
+    {
+        $unit = isset($r['unit']) ? $units->get((int) $r['unit']) : null;
+        $project = $unit ? $projects->get($unit->project_id) ?? $unit->project : (isset($r['project']) ? $projects->get((int) $r['project']) : null);
+        $price = (float) ($r['price'] ?? $unit?->price ?? 0);
+        $milestones = is_array($r['milestones'] ?? null) ? array_values($r['milestones']) : [];
+        if ((isset($r['unit']) && ! $unit) || ! $price || $milestones === []) {
+            return null;
+        }
+        $date = Carbon::parse($r['date'] ?? now('Asia/Manila')->toDateString(), 'Asia/Manila');
+        $schedule = Offer::buildSchedule($price, $milestones, $date, $project?->completion_date);
+
+        return [
+            'type' => 'payment',
+            'unit' => $unit ? ['id' => $unit->id, 'name' => $unit->name] : null,
+            'project' => $project ? ['id' => $project->id, 'name' => $project->name] : null,
+            'price' => $price,
+            'price_now' => $unit && ($now = $unit->offerPrice()) !== null && abs((float) $now - $price) >= 0.01 ? (float) $now : null,
+            'terms' => (string) ($r['terms'] ?? 'Custom terms'),
+            'plan_id' => isset($r['plan']) ? (int) $r['plan'] : null,
+            'purchase_date' => $date->toDateString(),
+            'buyer' => is_string($r['buyer'] ?? null) ? $r['buyer'] : null,
+            'payments' => collect($schedule)->map(fn (array $row) => [
+                'label' => $row['label'],
+                'percent' => round((float) $row['percent'], 2),
+                'amount' => (float) $row['amount'],
+                'date' => $row['date'],
+                'months' => $row['months'] ?? null,
+                'monthly' => $row['monthly'] ?? null,
+                'end_date' => $row['end_date'] ?? null,
+                'last_month' => isset($row['installments']) ? end($row['installments'])['amount'] : null,
+            ])->all(),
+            'milestones' => $milestones,
+            'can_offer' => $unit !== null && $unit->status === 'available' && $unit->offerPrice() !== null && $project?->status === 'active',
+        ];
+    }
+}

@@ -1,0 +1,246 @@
+<?php
+
+use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AccreditationController;
+use App\Http\Controllers\Admin\AgentController as AdminAgentController;
+use App\Http\Controllers\Admin\OfferController as AdminOfferController;
+use App\Http\Controllers\Admin\RealtyController;
+use App\Http\Controllers\Admin\StatsController;
+use App\Http\Controllers\AgentJoinController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PublicCertificateController;
+use App\Http\Controllers\PublicOfferController;
+use App\Http\Controllers\PublicRealtyController;
+use App\Http\Controllers\Realty\AccreditationAgreementController;
+use App\Http\Controllers\Realty\AgentController;
+use App\Http\Controllers\Realty\AssistantController;
+use App\Http\Controllers\Realty\MyAccreditationController;
+use App\Http\Controllers\Realty\OfferController;
+use App\Http\Controllers\Realty\OverviewController;
+use App\Http\Controllers\Realty\PaymentPlanController;
+use App\Http\Controllers\Realty\ProjectController;
+use App\Http\Controllers\Realty\ProjectPageController;
+use App\Http\Controllers\Realty\ProjectUpdateController;
+use App\Http\Controllers\Realty\QuotationController;
+use App\Http\Controllers\Realty\RealtyAccreditationController;
+use App\Http\Controllers\Realty\ReportController;
+use App\Http\Controllers\Realty\RequirementTypeController;
+use App\Http\Controllers\Realty\ReservationAdminController;
+use App\Http\Controllers\Realty\SiteMapController;
+use App\Http\Controllers\Realty\StaffController;
+use App\Http\Controllers\Realty\TaskController;
+use App\Http\Controllers\Realty\UnitController;
+use App\Http\Controllers\Realty\UnitTypeController;
+use App\Http\Controllers\ReservationController;
+use Illuminate\Support\Facades\Route;
+
+// Called by the Next.js server, never straight from the browser.
+
+// Public
+Route::get('/realties', [PublicRealtyController::class, 'index']);
+Route::get('/realties/{slug}', [PublicRealtyController::class, 'show']);
+Route::get('/realties/{slug}/projects', [PublicRealtyController::class, 'projects']);
+Route::get('/realties/{slug}/projects/{projectSlug}', [PublicRealtyController::class, 'project']);
+Route::get('/offers/{code}', [PublicOfferController::class, 'show'])->middleware('throttle:offer-view');
+Route::post('/offers/{code}/respond', [PublicOfferController::class, 'respond'])->middleware('throttle:offer-respond');
+Route::post('/offers/{code}/unlock', [PublicOfferController::class, 'unlock'])->middleware('throttle:login');
+Route::post('/offers/{code}/enter', [PublicOfferController::class, 'enter'])->middleware('throttle:login');
+Route::middleware('throttle:offer-upload')->group(function () {
+    Route::post('/offers/{code}/details', [PublicOfferController::class, 'details']);
+    Route::post('/offers/{code}/documents', [PublicOfferController::class, 'upload']);
+    Route::post('/offers/{code}/documents/{document}/remove', [PublicOfferController::class, 'removeDocument'])->whereNumber('document');
+    // Reserving the home: proof of a bank/GCash payment, or an online payment through PayMongo.
+    Route::post('/offers/{code}/reservation/proof', [ReservationController::class, 'proof']);
+    Route::post('/offers/{code}/reservation/checkout', [ReservationController::class, 'checkout']);
+    Route::get('/offers/{code}/reservation', [ReservationController::class, 'status']);
+});
+// PayMongo calls this when a reservation fee is paid (checked by its signature).
+Route::post('/webhooks/paymongo', [ReservationController::class, 'webhook']);
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
+
+// The public check for a certificate of accreditation (jvconline.ph/verify/<code>).
+Route::get('/certificates/{code}', [PublicCertificateController::class, 'show'])->where('code', '[A-Za-z0-9]{6,20}')->middleware('throttle:offer-view');
+
+// Invite links (the token is the credential)
+Route::middleware('throttle:invite-link')->group(function () {
+    Route::get('/accreditation/{token}', [AccreditationController::class, 'show']);
+    Route::post('/accreditation/{token}', [AccreditationController::class, 'store']);
+    Route::get('/join/{token}', [AgentJoinController::class, 'show']);
+    Route::post('/join/{token}', [AgentJoinController::class, 'store']);
+});
+
+// The open accreditation form on a developer's website (jvconline.ph/accreditation): no invite needed.
+Route::get('/realties/{realty}/accreditation', [AccreditationController::class, 'openShow'])->middleware('throttle:invite-link');
+Route::post('/realties/{realty}/accreditation', [AccreditationController::class, 'openStore'])->middleware('throttle:accreditation-form');
+
+Route::middleware(['auth:sanctum', 'view-as'])->group(function () {
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::get('/auth/view-as', [AuthController::class, 'viewAsOptions']);
+    Route::post('/auth/view-as', [AuthController::class, 'viewAs']);
+
+    // Everyone's own account: name, email, phone and password.
+    Route::get('/account', [AccountController::class, 'show']);
+    Route::patch('/account', [AccountController::class, 'update'])->middleware('throttle:login');
+    Route::post('/account/password', [AccountController::class, 'password'])->middleware('throttle:login');
+    Route::post('/account/photo', [AccountController::class, 'photo']);
+    Route::delete('/account/photo', [AccountController::class, 'removePhoto']);
+
+    // jvconline admin
+    Route::prefix('admin')->middleware('admin')->group(function () {
+        Route::get('/stats', StatsController::class);
+        Route::get('/realties', [RealtyController::class, 'index']);
+        Route::get('/realties/{realty}', [RealtyController::class, 'show']);
+        Route::get('/offers', [AdminOfferController::class, 'index']);
+        Route::get('/people', [AdminAgentController::class, 'index']);
+    });
+
+    // A realty's own dashboard — every query is scoped to the signed-in user's realty.
+    // A broker (an accredited realty) works on its developer's inventory, but only the
+    // developer's own team edits it: those routes say `developer`.
+    Route::prefix('realty')->group(function () {
+        Route::middleware('realty.member')->group(function () {
+            Route::get('/overview', OverviewController::class);
+            // A quotation (sample computation) for a buyer, to print or save as a PDF. Nothing is saved.
+            Route::post('/quotation', QuotationController::class);
+            Route::get('/projects', [ProjectController::class, 'index']);
+            Route::get('/projects/{project}', [ProjectController::class, 'show']);
+            // Staff need the Offers section; agents always reach their own offers.
+            Route::middleware('section:offers')->group(function () {
+                // A sales report for a period: the page, its PDF and the AI's report card.
+                Route::get('/reports', ReportController::class);
+                Route::get('/offers', [OfferController::class, 'index']);
+                Route::get('/offers/responses', [OfferController::class, 'responses']);
+                Route::get('/offers/{id}', [OfferController::class, 'show'])->whereNumber('id');
+                Route::post('/offers', [OfferController::class, 'store']);
+                Route::post('/offers/{offer}/void', [OfferController::class, 'void'])->whereNumber('offer');
+                Route::post('/offers/{offer}/extend', [OfferController::class, 'extend'])->whereNumber('offer');
+                Route::get('/offers/{id}/documents/{document}', [OfferController::class, 'document'])->whereNumber(['id', 'document']);
+                Route::get('/offers/{id}/reservation/proof', [ReservationAdminController::class, 'proof'])->whereNumber('id');
+                Route::post('/offers/{id}/remind', [OfferController::class, 'remind'])->whereNumber('id');
+                Route::post('/offers/{id}/send', [OfferController::class, 'send'])->whereNumber('id');
+                Route::post('/offers/{id}/terms', [OfferController::class, 'terms'])->whereNumber('id');
+                Route::post('/offers/{id}/login', [OfferController::class, 'login'])->whereNumber('id');
+            });
+        });
+        // Tasks: everyone has their own board; managers (Tasks section) give tasks out.
+        Route::middleware('realty.member')->group(function () {
+            Route::get('/tasks', [TaskController::class, 'index']);
+            Route::get('/tasks/options', [TaskController::class, 'options']);
+            Route::get('/tasks/{task}', [TaskController::class, 'show'])->whereNumber('task');
+            Route::post('/tasks', [TaskController::class, 'store']);
+            Route::post('/tasks/{task}', [TaskController::class, 'update'])->whereNumber('task');
+            Route::post('/tasks/{task}/status', [TaskController::class, 'status'])->whereNumber('task');
+            Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->whereNumber('task');
+            Route::post('/tasks/{task}/comments', [TaskController::class, 'comment'])->whereNumber('task');
+            Route::post('/tasks/{task}/files', [TaskController::class, 'upload'])->whereNumber('task')->middleware('throttle:offer-upload');
+            Route::get('/tasks/{task}/files/{file}', [TaskController::class, 'download'])->whereNumber(['task', 'file']);
+            Route::delete('/tasks/{task}/files/{file}', [TaskController::class, 'deleteFile'])->whereNumber(['task', 'file']);
+        });
+        // The developer's team: staff and agents of Johndorf, not of a broker.
+        Route::middleware('realty.member:any,developer')->group(function () {
+            // The AI assistant: each with their own chats.
+            Route::middleware('section:ai')->group(function () {
+                Route::get('/assistant/chats', [AssistantController::class, 'index']);
+                Route::get('/assistant/chats/{chat}', [AssistantController::class, 'show'])->whereNumber('chat');
+                Route::delete('/assistant/chats/{chat}', [AssistantController::class, 'destroy'])->whereNumber('chat');
+                Route::post('/assistant/messages', [AssistantController::class, 'send'])->middleware('throttle:assistant');
+                Route::post('/assistant/stream', [AssistantController::class, 'stream'])->middleware('throttle:assistant');
+                Route::post('/assistant/transcribe', [AssistantController::class, 'transcribe'])->middleware('throttle:assistant-voice');
+            });
+            // Buyers' files are checked by the developer, not by the firm that sold.
+            Route::post('/offers/{id}/documents/{document}/review', [OfferController::class, 'review'])->whereNumber(['id', 'document'])->middleware('section:offers');
+        });
+        // Any realty's admins manage their own agents.
+        Route::middleware('realty.member:staff')->group(function () {
+            Route::middleware('section:agents')->group(function () {
+                Route::get('/agents', [AgentController::class, 'index']);
+                Route::post('/agents', [AgentController::class, 'store']);
+                Route::post('/agents/invitations/{invitation}/resend', [AgentController::class, 'resend']);
+                Route::delete('/agents/invitations/{invitation}', [AgentController::class, 'destroyInvitation'])->whereNumber('invitation');
+                Route::post('/agents/{agent}/approve', [AgentController::class, 'approve'])->whereNumber('agent');
+                Route::post('/agents/{agent}/reject', [AgentController::class, 'reject'])->whereNumber('agent');
+                Route::delete('/agents/{agent}', [AgentController::class, 'destroy'])->whereNumber('agent');
+            });
+            Route::delete('/offers/{offer}', [OfferController::class, 'destroy'])->whereNumber('offer')->middleware('section:offers');
+            // An accredited realty's own accreditation: its period, the agreement to print, the signed copy.
+            Route::get('/accreditation', [MyAccreditationController::class, 'show']);
+            Route::post('/accreditation/signed-copy', [MyAccreditationController::class, 'upload'])->middleware('throttle:offer-upload');
+            // Team > Staff: a full admin's own staff accounts and what each may use.
+            Route::middleware('section:staff')->group(function () {
+                Route::get('/staff', [StaffController::class, 'index']);
+                Route::post('/staff', [StaffController::class, 'store']);
+                Route::post('/staff/{user}/access', [StaffController::class, 'access'])->whereNumber('user');
+                Route::post('/staff/{user}/password', [StaffController::class, 'password'])->whereNumber('user');
+                Route::post('/staff/{user}/status', [StaffController::class, 'status'])->whereNumber('user');
+                Route::delete('/staff/{user}', [StaffController::class, 'destroy'])->whereNumber('user');
+            });
+        });
+        // The developer's admins: approve terms, set unit status, edit the inventory.
+        Route::middleware('realty.member:staff,developer')->group(function () {
+            // Team > Realty Company Invitation: invite a realty, review its accreditation form, accept or turn it down.
+            Route::middleware('section:realties')->group(function () {
+                Route::get('/realties', [RealtyAccreditationController::class, 'index']);
+                Route::post('/realties/invite', [RealtyAccreditationController::class, 'invite']);
+                Route::post('/realties/invitations/{accreditation}/resend', [RealtyAccreditationController::class, 'resend'])->whereNumber('accreditation');
+                Route::get('/realties/accreditations/{accreditation}', [RealtyAccreditationController::class, 'show'])->whereNumber('accreditation');
+                Route::get('/realties/accreditations/{accreditation}/documents/{document}', [RealtyAccreditationController::class, 'document'])->whereNumber(['accreditation', 'document']);
+                Route::post('/realties/accreditations/{accreditation}/approve', [RealtyAccreditationController::class, 'approve'])->whereNumber('accreditation');
+                Route::post('/realties/accreditations/{accreditation}/reject', [RealtyAccreditationController::class, 'reject'])->whereNumber('accreditation');
+                Route::post('/realties/accreditations/{accreditation}/resend-login', [RealtyAccreditationController::class, 'resendLogin'])->whereNumber('accreditation');
+                Route::delete('/realties/accreditations/{accreditation}', [RealtyAccreditationController::class, 'destroy'])->whereNumber('accreditation');
+                Route::delete('/realties/{realty}', [RealtyAccreditationController::class, 'destroyBroker'])->whereNumber('realty');
+                // The Broker's Accreditation Agreement and each accredited realty's period.
+                Route::get('/realties/agreement', [AccreditationAgreementController::class, 'show']);
+                Route::post('/realties/agreement', [AccreditationAgreementController::class, 'update']);
+                Route::post('/realties/accreditations/{accreditation}/term', [RealtyAccreditationController::class, 'term'])->whereNumber('accreditation');
+                Route::post('/realties/accreditations/{accreditation}/end', [RealtyAccreditationController::class, 'end'])->whereNumber('accreditation');
+                Route::post('/realties/accreditations/{accreditation}/signed-copy', [RealtyAccreditationController::class, 'checkSignedCopy'])->whereNumber('accreditation');
+            });
+            Route::post('/offers/{id}/approval', [OfferController::class, 'approval'])->whereNumber('id')->middleware('section:approvals');
+            Route::post('/offers/{id}/unit-status', [OfferController::class, 'unitStatus'])->whereNumber('id')->middleware('section:offers');
+            // A buyer's reservation: the developer's admins confirm or send it back, and see the proof.
+            Route::post('/offers/{id}/reservation/confirm', [ReservationAdminController::class, 'confirm'])->whereNumber('id')->middleware('section:offers');
+            Route::post('/offers/{id}/reservation/decline', [ReservationAdminController::class, 'decline'])->whereNumber('id')->middleware('section:offers');
+            Route::match(['get', 'post'], '/reservation-settings', [ReservationAdminController::class, 'settings'])->middleware('section:requirements');
+            Route::middleware('section:requirements')->group(function () {
+                Route::get('/requirements', [RequirementTypeController::class, 'index']);
+                Route::post('/requirements', [RequirementTypeController::class, 'store']);
+                Route::post('/requirements/{type}', [RequirementTypeController::class, 'update']);
+                Route::post('/requirements/{type}/move', [RequirementTypeController::class, 'move']);
+                Route::delete('/requirements/{type}', [RequirementTypeController::class, 'destroy']);
+            });
+            Route::middleware('section:projects')->group(function () {
+                Route::post('/projects', [ProjectController::class, 'store']);
+                Route::post('/projects/{project}', [ProjectController::class, 'update']); // POST, not PATCH: multipart cover upload
+                Route::post('/projects/{project}/status', [ProjectController::class, 'status']);
+                Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->whereNumber('project');
+                Route::post('/projects/{project}/units', [UnitController::class, 'store']);
+                Route::post('/units/{unit}', [UnitController::class, 'update']);
+                Route::delete('/units/{unit}', [UnitController::class, 'destroy']);
+                // The clickable site plan: rows of lots drawn on it.
+                Route::post('/projects/{project}/site-map/image', [SiteMapController::class, 'image']);
+                Route::post('/projects/{project}/site-map/rows', [SiteMapController::class, 'storeRow']);
+                Route::post('/site-rows/{row}', [SiteMapController::class, 'updateRow']);
+                Route::post('/site-rows/{row}/apply', [SiteMapController::class, 'applyToRow']);
+                Route::delete('/site-rows/{row}', [SiteMapController::class, 'destroyRow']);
+                Route::post('/site-rows/{row}/photos', [SiteMapController::class, 'addRowPhotos']);
+                Route::post('/units/{unit}/photos', [SiteMapController::class, 'addLotPhotos']);
+                Route::post('/units/{unit}/photos/remove', [SiteMapController::class, 'removeLotPhoto']);
+                Route::post('/projects/{project}/plans', [PaymentPlanController::class, 'store']);
+                Route::post('/plans/{plan}', [PaymentPlanController::class, 'update']);
+                Route::delete('/plans/{plan}', [PaymentPlanController::class, 'destroy']);
+                // Public project page
+                Route::post('/projects/{project}/page', [ProjectPageController::class, 'settings']);
+                Route::post('/projects/{project}/page/media', [ProjectPageController::class, 'addMedia']);
+                Route::post('/projects/{project}/page/media/remove', [ProjectPageController::class, 'removeMedia']);
+                Route::post('/projects/{project}/unit-types', [UnitTypeController::class, 'store']);
+                Route::post('/unit-types/{unitType}', [UnitTypeController::class, 'update']);
+                Route::delete('/unit-types/{unitType}', [UnitTypeController::class, 'destroy']);
+                Route::post('/projects/{project}/updates', [ProjectUpdateController::class, 'store']);
+                Route::post('/updates/{update}/remove-photo', [ProjectUpdateController::class, 'removePhoto']);
+                Route::delete('/updates/{update}', [ProjectUpdateController::class, 'destroy']);
+            });
+        });
+    });
+});
