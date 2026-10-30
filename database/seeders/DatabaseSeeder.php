@@ -42,7 +42,7 @@ class DatabaseSeeder extends Seeder
                 'status' => Realty::STATUS_ACTIVE,
                 'registered_at' => now(),
                 'logo_path' => '/weecomm/logo-wide.png',
-                'accent_color' => '#e84030',
+                'accent_color' => '#4080f0',
                 'email' => 'inquiries@weecomm.ph',
                 'phone' => '(02) 866 16794',
                 'address' => '166 A. Mabini St., Addition Hills, San Juan 1500 Metro Manila',
