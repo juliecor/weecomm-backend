@@ -26,7 +26,7 @@ class SiteMapTransferTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $johndorf = Realty::create(['name' => 'Johndorf Ventures Corporation', 'slug' => 'johndorf', 'status' => Realty::STATUS_ACTIVE, 'registered_at' => now()]);
+        $johndorf = Realty::create(['name' => 'Wee Community Developers, Inc.', 'slug' => 'weecomm', 'status' => Realty::STATUS_ACTIVE, 'registered_at' => now()]);
         Sanctum::actingAs(User::factory()->create(['role' => User::ROLE_REALTY, 'realty_id' => $johndorf->id]));
         $this->project = Project::create(['realty_id' => $johndorf->id, 'name' => 'Astana Davao', 'slug' => 'astana-davao', 'status' => 'active', 'is_public' => true,
             'site_plan_paths' => ['https://cdn.example.com/astana/plan-1.jpg']]);
@@ -93,7 +93,7 @@ class SiteMapTransferTest extends TestCase
         $this->assertSame(0, SiteRow::count());
         $this->assertSame(0, Unit::count());
 
-        $this->artisan('site-map:import', ['project' => 'nowhere', '--file' => $this->file])->expectsOutputToContain('No project nowhere for johndorf.')->assertExitCode(1);
+        $this->artisan('site-map:import', ['project' => 'nowhere', '--file' => $this->file])->expectsOutputToContain('No project nowhere for weecomm.')->assertExitCode(1);
         $this->artisan('site-map:export', ['project' => 'astana-davao', '--file' => $this->file])->expectsOutputToContain('has no lots on its site map yet')->assertExitCode(1);
     }
 }

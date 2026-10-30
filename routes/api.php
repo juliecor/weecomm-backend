@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\RealtyController;
 use App\Http\Controllers\Admin\StatsController;
 use App\Http\Controllers\AgentJoinController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\PublicCertificateController;
 use App\Http\Controllers\PublicOfferController;
 use App\Http\Controllers\PublicRealtyController;
@@ -41,6 +42,8 @@ Route::get('/realties', [PublicRealtyController::class, 'index']);
 Route::get('/realties/{slug}', [PublicRealtyController::class, 'show']);
 Route::get('/realties/{slug}/projects', [PublicRealtyController::class, 'projects']);
 Route::get('/realties/{slug}/projects/{projectSlug}', [PublicRealtyController::class, 'project']);
+// The inquiry form on the realty's website: emailed to the realty's inbox.
+Route::post('/realties/{slug}/inquiries', [InquiryController::class, 'store'])->middleware('throttle:inquiry');
 Route::get('/offers/{code}', [PublicOfferController::class, 'show'])->middleware('throttle:offer-view');
 Route::post('/offers/{code}/respond', [PublicOfferController::class, 'respond'])->middleware('throttle:offer-respond');
 Route::post('/offers/{code}/unlock', [PublicOfferController::class, 'unlock'])->middleware('throttle:login');

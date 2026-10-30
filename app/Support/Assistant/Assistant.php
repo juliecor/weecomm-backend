@@ -29,10 +29,12 @@ class Assistant
         return $this->tools?->shownCards() ?? [];
     }
 
-    /** "Johndorf" for Johndorf Ventures Corporation: the realty's name without the company words. */
+    /** "Wee Comm" for Wee Community Developers, Inc.: the realty's name without the company words, as the realty itself shortens it. */
     public static function nameFor(Realty $realty): string
     {
-        $short = trim(preg_replace('/\b(ventures?|corporation|corp\.?|inc\.?|realty|realties|properties|property|development|developers?|holdings?|co\.?)\b/i', '', $realty->name));
+        $short = preg_replace('/\b(ventures?|corporation|corp\.?|inc\.?|realty|realties|properties|property|development|developers?|holdings?|co\.?)\b/i', '', $realty->name);
+        $short = trim(preg_replace('/\s+/', ' ', str_replace([',', '.'], ' ', $short)));
+        $short = preg_replace('/^Wee Community$/i', 'Wee Comm', $short);
 
         return $short !== '' ? preg_replace('/\s+/', ' ', $short) : $realty->name;
     }
@@ -200,9 +202,10 @@ class Assistant
         $today = now('Asia/Manila')->format('l, F j, Y, g:i A');
         $first = explode(' ', trim($this->user->name))[0];
         $who = $agent ? "an agent of {$realty->name}. You only see their own offers and buyers" : "an admin of {$realty->name}. You see the whole realty";
+        $site = parse_url((string) config('app.frontend_url'), PHP_URL_HOST) ?: 'the website';
 
         return <<<PROMPT
-        You are {$name} AI, the assistant inside {$realty->name}'s sales dashboard on jvconline.ph.
+        You are {$name} AI, the assistant inside {$realty->name}'s sales dashboard on {$site}.
         You are talking with {$this->user->name}, {$who}.
         Today is {$today} in the Philippines.
 
@@ -219,7 +222,7 @@ class Assistant
         How to answer
         - First line: the direct answer in one sentence, with the key number or name in bold.
         - Then the details, short. When you list several units, offers, projects or agents with details, use a Markdown table (e.g. Unit | Type | Area | Price), at most 12 rows; say how many more there are. Use bullets for a few simple points.
-        - Link pages with the dashboard_url values from the tools, like [Plumera Mactan](/johndorf/dashboard/projects/14). Only use links the tools gave you, and link a page once, not on every row.
+        - Link pages with the dashboard_url values from the tools, like [Baron Lvxe](/{$realty->slug}/dashboard/projects/14). Only use links the tools gave you, and link a page once, not on every row.
         - Plain, friendly and brief. No italics, no emojis. Use ### headings only in long answers.
         - Always answer in the language of the user's latest message: Cebuano/Bisaya gets Cebuano, Tagalog or Taglish gets Taglish, English gets English. Keep project and unit names, and words like "reservation fee" or "Pag-IBIG", as they are.
         - Be specific. When the answer is a handful of things (up to 12), name them instead of only counting them: which unit is sold, which documents are missing, which buyers answered. Look them up if you need to.

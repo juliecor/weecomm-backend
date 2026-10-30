@@ -1,0 +1,278 @@
+[
+  {
+    "slug": "baron-lvxe",
+    "name": "Baron Lvxe",
+    "location": "San Juan City",
+    "region": "Metro Manila",
+    "stage": "Pre-selling",
+    "status_label": "Pre-selling",
+    "completed_year": null,
+    "description": "Baron Lvxe is the fifth addition to our prestigious signature line of Baron projects in San Juan.",
+    "cover": "/weecomm/projects/baron-lvxe/1.jpg",
+    "hero": [
+      "/weecomm/projects/baron-lvxe/1.jpg",
+      "/weecomm/projects/baron-lvxe/2.jpg",
+      "/weecomm/projects/baron-lvxe/3.jpg",
+      "/weecomm/projects/baron-lvxe/4.jpg",
+      "/weecomm/projects/baron-lvxe/5.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/baron-lvxe/",
+    "wp_id": 361
+  },
+  {
+    "slug": "calle-centrale",
+    "name": "Calle Centrale",
+    "location": "Quezon City",
+    "region": "Metro Manila",
+    "stage": "Pre-selling",
+    "status_label": "Pre-selling",
+    "completed_year": null,
+    "description": null,
+    "cover": "/weecomm/projects/calle-centrale/1.jpg",
+    "hero": [
+      "/weecomm/projects/calle-centrale/1.jpg",
+      "/weecomm/projects/calle-centrale/2.jpg",
+      "/weecomm/projects/calle-centrale/3.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/calle-centrale/",
+    "wp_id": 2970
+  },
+  {
+    "slug": "weecomm-centre",
+    "name": "WeeComm Centre",
+    "location": "Mandaluyong City",
+    "region": "Metro Manila",
+    "stage": "Pre-selling",
+    "status_label": "Pre-selling",
+    "completed_year": null,
+    "description": "The WeeComm Centre is an iconic 15-storey building that will house both residential units and the future headquarters of Wee Community Developers, Inc.",
+    "cover": "/weecomm/projects/weecomm-centre/1.jpg",
+    "hero": [
+      "/weecomm/projects/weecomm-centre/1.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/weecomm-centre/",
+    "wp_id": 369
+  },
+  {
+    "slug": "destine-davao",
+    "name": "Destine Davao",
+    "location": "Davao City",
+    "region": "Mindanao",
+    "stage": "Pre-selling",
+    "status_label": "Pre-selling",
+    "completed_year": null,
+    "description": "As a testament to Wee Comm’s relentless growth, we signed our latest joint venture with Monark Equipment Corporation in Davao.",
+    "cover": "/weecomm/projects/destine-davao/1.jpg",
+    "hero": [
+      "/weecomm/projects/destine-davao/1.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/destine-davao/",
+    "wp_id": 1286
+  },
+  {
+    "slug": "intalio-flats-primea",
+    "name": "Intalio Flats Primea",
+    "location": "Cagayan de Oro",
+    "region": "Mindanao",
+    "stage": "Pre-selling",
+    "status_label": "Pre-selling",
+    "completed_year": null,
+    "description": "Intalio Flats Primea is Wee Comm’s first venture into vertical developments in Cagayan de Oro.",
+    "cover": "/weecomm/projects/intalio-flats-primea/1.jpg",
+    "hero": [
+      "/weecomm/projects/intalio-flats-primea/1.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/intalio-flats-primea/",
+    "wp_id": 403
+  },
+  {
+    "slug": "intalio-estates",
+    "name": "Intalio Estates",
+    "location": "Cagayan de Oro",
+    "region": "Mindanao",
+    "stage": "Pre-selling",
+    "status_label": "Pre-selling",
+    "completed_year": null,
+    "description": "Intalio Estates is the flagship project in Cagayan de Oro. This master-planned community offers five spacious housing options.",
+    "cover": "/weecomm/projects/intalio-estates/1.jpg",
+    "hero": [
+      "/weecomm/projects/intalio-estates/1.jpg",
+      "/weecomm/projects/intalio-estates/2.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/intalio-estates/",
+    "wp_id": 401
+  },
+  {
+    "slug": "emerald-estates",
+    "name": "Emerald Estates",
+    "location": "Iloilo",
+    "region": "Visayas",
+    "stage": "Pre-selling",
+    "status_label": "Pre-selling",
+    "completed_year": null,
+    "description": "The Emerald Estates is Wee Comm’s first venture into Visayas. Innovation and a mark of technology are at the forefront.",
+    "cover": "/weecomm/projects/emerald-estates/1.jpg",
+    "hero": [
+      "/weecomm/projects/emerald-estates/1.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/emerald-estates/",
+    "wp_id": 397
+  },
+  {
+    "slug": "jacinta-enclaves",
+    "name": "Jacinta Enclaves",
+    "location": "Cainta, Rizal",
+    "region": "Luzon",
+    "stage": "Ongoing",
+    "status_label": "Tower 1 completed",
+    "completed_year": null,
+    "description": "Jacinta Enclaves signifies Wee Comm’s entrance into Cainta, Rizal’s affordable residential condominium market.",
+    "cover": "/weecomm/projects/jacinta-enclaves/1.jpg",
+    "hero": [
+      "/weecomm/projects/jacinta-enclaves/1.jpg",
+      "/weecomm/projects/jacinta-enclaves/2.jpg",
+      "/weecomm/projects/jacinta-enclaves/3.jpg",
+      "/weecomm/projects/jacinta-enclaves/4.jpg",
+      "/weecomm/projects/jacinta-enclaves/5.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/jacinta-enclaves/",
+    "wp_id": 395
+  },
+  {
+    "slug": "the-southprime-flats",
+    "name": "The Southprime Flats",
+    "location": "Iloilo",
+    "region": "Visayas",
+    "stage": "Ongoing",
+    "status_label": "Tower 1 completed",
+    "completed_year": null,
+    "description": "Building on the success of Emerald Estates, The Southprime Flats is our latest venture and first vertical development in Iloilo.",
+    "cover": "/weecomm/projects/the-southprime-flats/1.jpg",
+    "hero": [
+      "/weecomm/projects/the-southprime-flats/1.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/the-southprime-flats/",
+    "wp_id": 399
+  },
+  {
+    "slug": "harbour-park-residences",
+    "name": "Harbour Park Residences",
+    "location": "Mandaluyong City",
+    "region": "Metro Manila",
+    "stage": "Completed",
+    "status_label": "Completed",
+    "completed_year": null,
+    "description": "Harbour Park Residences marks our debut in Mandaluyong City. During the Tower 1 Topping-Off Ceremony in 2021, Wee Comm has already completed six successful projects in Metro Manila.",
+    "cover": "/weecomm/projects/harbour-park-residences/1.jpg",
+    "hero": [
+      "/weecomm/projects/harbour-park-residences/1.jpg",
+      "/weecomm/projects/harbour-park-residences/2.jpg",
+      "/weecomm/projects/harbour-park-residences/3.jpg",
+      "/weecomm/projects/harbour-park-residences/4.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/harbour-park-residences/",
+    "wp_id": 363
+  },
+  {
+    "slug": "grand-mesa-residences",
+    "name": "Grand Mesa Residences",
+    "location": "Quezon City",
+    "region": "Metro Manila",
+    "stage": "Completed",
+    "status_label": "Completed",
+    "completed_year": null,
+    "description": "Grand Mesa Residences is our development where one can bask in the serene beauty of nature thanks to the picturesque view of the Rizal mountains and the La Mesa Ecopark.",
+    "cover": "/weecomm/projects/grand-mesa-residences/1.jpg",
+    "hero": [
+      "/weecomm/projects/grand-mesa-residences/1.jpg",
+      "/weecomm/projects/grand-mesa-residences/2.jpg",
+      "/weecomm/projects/grand-mesa-residences/3.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/grand-mesa-residences/",
+    "wp_id": 382
+  },
+  {
+    "slug": "the-diamond-heights",
+    "name": "The Diamond Heights",
+    "location": "Brgy. Communal, Davao City",
+    "region": "Mindanao",
+    "stage": "Completed",
+    "status_label": "Completed",
+    "completed_year": null,
+    "description": "The Diamond Heights marked Wee Comm’s first bold step—to expand outside of San Juan and enter Davao’s bustling community.",
+    "cover": "/weecomm/projects/the-diamond-heights/1.jpg",
+    "hero": [
+      "/weecomm/projects/the-diamond-heights/1.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/the-diamond-heights/",
+    "wp_id": 1288
+  },
+  {
+    "slug": "baron-tower",
+    "name": "Baron Tower",
+    "location": "San Juan City",
+    "region": "Metro Manila",
+    "stage": "Completed",
+    "status_label": "Completed in 2018",
+    "completed_year": 2018,
+    "description": "Baron Tower stands high at 30-storeys in one of San Juan’s prime locations—Wilson Street. This project also marks the first “Signature Line Project” of WeeComm. Designed by the renowned architectural firm Budji Layug + Royal Pineda Design Architects, each feature is designed with elegance, class, and superior quality of the highest standard.",
+    "cover": "/weecomm/projects/baron-tower/1.jpg",
+    "hero": [
+      "/weecomm/projects/baron-tower/1.jpg",
+      "/weecomm/projects/baron-tower/2.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/baron-tower/",
+    "wp_id": 391
+  },
+  {
+    "slug": "the-baron-3-gardens",
+    "name": "The Baron 3 Gardens",
+    "location": "San Juan City",
+    "region": "Metro Manila",
+    "stage": "Completed",
+    "status_label": "Completed in 2014",
+    "completed_year": 2014,
+    "description": "Just one year after the completion of The Baron’s Place, Wee Comm successfully launched the Baron 3 Gardens. This project signaled Wee Comm’s venture into mid-rise developments which stand at 14-storeys high.",
+    "cover": "/weecomm/projects/the-baron-3-gardens/1.jpg",
+    "hero": [
+      "/weecomm/projects/the-baron-3-gardens/1.jpg",
+      "/weecomm/projects/the-baron-3-gardens/2.jpg",
+      "/weecomm/projects/the-baron-3-gardens/3.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/the-baron-3-gardens/",
+    "wp_id": 389
+  },
+  {
+    "slug": "the-barons-place",
+    "name": "The Baron's Place",
+    "location": "San Juan City",
+    "region": "Metro Manila",
+    "stage": "Completed",
+    "status_label": "Completed in 2013",
+    "completed_year": 2013,
+    "description": "Following the success of the First Baron Residences, Wee Comm built The Baron’s Place in 2013. Located just a few steps away from key establishments, The Baron’s Place solidified Wee Comm’s presence as a developer to watch out for in San Juan.",
+    "cover": "/weecomm/projects/the-barons-place/1.jpg",
+    "hero": [
+      "/weecomm/projects/the-barons-place/1.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/the-barons-place/",
+    "wp_id": 387
+  },
+  {
+    "slug": "the-first-baron-residences",
+    "name": "The First Baron Residences",
+    "location": "San Juan City",
+    "region": "Metro Manila",
+    "stage": "Completed",
+    "status_label": "Completed in 2010",
+    "completed_year": 2010,
+    "description": "Wee Comm’s pioneer development located in San Juan. With a total of 36 exclusive and spacious units, the First Baron Residences set the tone for the Beyond Ordinary homes Wee Comm will be known for in the years to come.",
+    "cover": "/weecomm/projects/the-first-baron-residences/1.jpg",
+    "hero": [
+      "/weecomm/projects/the-first-baron-residences/1.jpg",
+      "/weecomm/projects/the-first-baron-residences/2.jpg"
+    ],
+    "source": "https://weecomm.ph/projects/the-first-baron-residences/",
+    "wp_id": 385
+  }
+]

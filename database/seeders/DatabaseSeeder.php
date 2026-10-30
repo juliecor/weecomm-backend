@@ -11,9 +11,9 @@ class DatabaseSeeder extends Seeder
 {
     /**
      * The first admin (from ADMIN_* in .env, so no password sits in the repo),
-     * Johndorf, realty #1 — it already has its page at /johndorf — and its
-     * staff login (from JOHNDORF_ADMIN_* in .env), and the owner's super admin,
-     * who can view any realty's dashboard as any role (its password is typed in).
+     * Wee Comm, realty #1 — the site is theirs, its landing is at / — with its
+     * staff login (from WEECOMM_ADMIN_* in .env) and its 16 communities, and the
+     * owner's super admin, who can view any realty's dashboard as any role.
      * Safe to run again: it updates rather than duplicates.
      */
     public function run(): void
@@ -28,33 +28,44 @@ class DatabaseSeeder extends Seeder
 
         User::updateOrCreate(
             ['email' => $email],
-            ['name' => env('ADMIN_NAME', 'jvconline admin'), 'password' => $password, 'role' => User::ROLE_ADMIN, 'realty_id' => null],
+            ['name' => env('ADMIN_NAME', 'Platform admin'), 'password' => $password, 'role' => User::ROLE_ADMIN, 'realty_id' => null],
         );
         $this->command->info("Admin: {$email}");
 
         $this->call(SuperAdminSeeder::class);
 
-        $johndorf = Realty::updateOrCreate(
-            ['slug' => 'johndorf'],
-            ['name' => 'Johndorf Ventures Corporation', 'status' => Realty::STATUS_ACTIVE, 'registered_at' => now(), 'logo_path' => '/johndorf/logo.png', 'accent_color' => '#b4241c'],
+        // Everything here is from weecomm.ph: the company's own details and words.
+        $weecomm = Realty::updateOrCreate(
+            ['slug' => 'weecomm'],
+            [
+                'name' => 'Wee Community Developers, Inc.',
+                'status' => Realty::STATUS_ACTIVE,
+                'registered_at' => now(),
+                'logo_path' => '/weecomm/logo-wide.png',
+                'accent_color' => '#e84030',
+                'email' => 'inquiries@weecomm.ph',
+                'phone' => '(02) 866 16794',
+                'address' => '166 A. Mabini St., Addition Hills, San Juan 1500 Metro Manila',
+                'about' => 'At Wee Comm, we transform spaces into vibrant, sustainable communities designed for a lifetime of comfort and connection. Our commitment goes beyond building homes, we create environments where families thrive and neighborhoods flourish.',
+            ],
         );
-        // What buyers send with their offer (ID, proof of income…); left alone if Johndorf already has its list.
-        RequirementType::seedDefaults($johndorf);
-        $this->command->info('Realty: Johndorf Ventures Corporation (/johndorf)');
+        // What buyers send with their offer (ID, proof of income…); left alone once Wee Comm has its own list.
+        RequirementType::seedDefaults($weecomm);
+        $this->command->info('Realty: Wee Community Developers, Inc. (/weecomm)');
 
-        // Johndorf's own staff login (signs in at /johndorf/login, not /admin/login).
-        $johndorfEmail = env('JOHNDORF_ADMIN_EMAIL');
-        $johndorfPassword = env('JOHNDORF_ADMIN_PASSWORD');
-        if ($johndorfEmail && $johndorfPassword) {
+        // Wee Comm's own staff login (signs in at /weecomm/login, not /admin/login).
+        $staffEmail = env('WEECOMM_ADMIN_EMAIL');
+        $staffPassword = env('WEECOMM_ADMIN_PASSWORD');
+        if ($staffEmail && $staffPassword) {
             User::updateOrCreate(
-                ['email' => $johndorfEmail],
-                ['name' => env('JOHNDORF_ADMIN_NAME', 'Johndorf Admin'), 'password' => $johndorfPassword, 'role' => User::ROLE_REALTY, 'realty_id' => $johndorf->id],
+                ['email' => $staffEmail],
+                ['name' => env('WEECOMM_ADMIN_NAME', 'Wee Comm Admin'), 'password' => $staffPassword, 'role' => User::ROLE_REALTY, 'realty_id' => $weecomm->id],
             );
-            $this->command->info("Johndorf staff: {$johndorfEmail}");
+            $this->command->info("Wee Comm staff: {$staffEmail}");
         } else {
-            $this->command->warn('Skipped the Johndorf staff login: set JOHNDORF_ADMIN_EMAIL and JOHNDORF_ADMIN_PASSWORD in .env.');
+            $this->command->warn('Skipped the Wee Comm staff login: set WEECOMM_ADMIN_EMAIL and WEECOMM_ADMIN_PASSWORD in .env.');
         }
 
-        $this->call(JohndorfProjectsSeeder::class);
+        $this->call(WeecommProjectsSeeder::class);
     }
 }

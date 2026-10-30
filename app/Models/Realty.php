@@ -31,7 +31,7 @@ class Realty extends Model
      * @var list<string>
      */
     public const RESERVED_SLUGS = [
-        'admin', 'auth', 'home', 'johndorf', 'offer', 'platform', 'projects', 'register', 'accreditation', 'view-as',
+        'admin', 'auth', 'home', 'johndorf', 'weecomm', 'offer', 'platform', 'projects', 'register', 'accreditation', 'view-as',
         'api', '_next', 'login', 'logout', 'dashboard', 'join', 'password', 'www', 'jvconline', 'static', 'assets', 'verify',
     ];
 

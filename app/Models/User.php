@@ -46,7 +46,7 @@ class User extends Authenticatable
         'agents' => 'Agents: invite, approve and remove agents',
         'realties' => 'Realty Company Invitation: invite and accredit realties',
         'requirements' => 'Buyer requirements: what buyers have to send',
-        'ai' => 'Johndorf AI',
+        'ai' => 'AI assistant: ask about projects, units, buyers and reports',
         'tasks' => 'Tasks: create tasks and give them to anyone in the realty',
     ];
 

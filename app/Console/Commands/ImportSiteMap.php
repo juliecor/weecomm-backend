@@ -20,7 +20,7 @@ class ImportSiteMap extends Command
 {
     protected $signature = 'site-map:import
         {project : The project\'s web address, e.g. astana-davao}
-        {--realty=johndorf : The developer\'s web address}
+        {--realty=weecomm : The developer\'s web address}
         {--file= : The saved map (default database/seeders/data/site-maps/{project}.json)}
         {--dry-run : Check the file and say what would happen, without saving anything}
         {--update : For rows already on the map, bring each lot\'s model, sizes and tags up to date from the file (never its price, status or photos)}';

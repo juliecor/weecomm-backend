@@ -67,11 +67,7 @@ class RequirementType extends Model
         return $match ? 'required' : 'not_needed';
     }
 
-    /**
-     * A starting checklist for a realty. Johndorf's comes from its Buyer's Guide
-     * (johndorfventures.com/buyers_guide.php) and Pag-IBIG's housing loan
-     * requirements; other realties start with the two every lender asks for.
-     */
+    /** A starting checklist for a realty: the two documents every lender asks for. The realty adds the rest in Buyer requirements. */
     /** Every realty that has no requirements yet gets the standard list. */
     public static function seedMissing(): void
     {
@@ -87,15 +83,6 @@ class RequirementType extends Model
             ['Valid government ID', "One valid ID with your photo and signature, e.g. passport, driver's license or UMID/SSS ID. Front and back.", 'all'],
             ['Proof of income', 'Your latest payslip, or a Certificate of Employment and Compensation from your employer. Self-employed: your latest Income Tax Return (ITR).', 'all'],
         ];
-        if ($realty->slug === 'johndorf') {
-            $rows = array_merge($rows, [
-                ['Online job income', 'Notarized Certificate of Engagement and 12 months of bank statements.', 'income:online'],
-                ['Commission-based income', "Notarized Certificate of Engagement and commission vouchers for the last 12 months, showing the issuer's name and contact details.", 'income:commission'],
-                ['Rental income', 'Copy of the lease contract and the tax declaration.', 'income:rental'],
-                ['Transport franchise income', 'Certified true copy of the transport franchise from the LGU (tricycles) or the LTFRB (other public utility vehicles).', 'income:transport'],
-                ["Co-borrower's ID and proof of income", 'Johndorf only allows immediate family as co-borrower: parents, siblings or children.', 'co_borrower'],
-            ]);
-        }
         foreach ($rows as $i => [$name, $help, $applies]) {
             static::create(['realty_id' => $realty->id, 'name' => $name, 'help' => $help, 'applies' => $applies, 'sort' => ($i + 1) * 10]);
         }

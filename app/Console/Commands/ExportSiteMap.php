@@ -17,7 +17,7 @@ class ExportSiteMap extends Command
 {
     protected $signature = 'site-map:export
         {project : The project\'s web address, e.g. astana-davao}
-        {--realty=johndorf : The developer\'s web address}
+        {--realty=weecomm : The developer\'s web address}
         {--file= : Where to save it (default database/seeders/data/site-maps/{project}.json)}';
 
     protected $description = 'Save a project\'s site map (rows of lots, each lot\'s model, sizes and price) to a file for site-map:import';

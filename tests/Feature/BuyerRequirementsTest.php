@@ -18,7 +18,7 @@ class BuyerRequirementsTest extends TestCase
 
     public function test_realties_without_requirements_get_the_standard_list_and_others_keep_theirs(): void
     {
-        $johndorf = Realty::create(['name' => 'Johndorf Ventures Corporation', 'slug' => 'johndorf', 'status' => Realty::STATUS_ACTIVE, 'registered_at' => now()]);
+        $johndorf = Realty::create(['name' => 'Wee Community Developers, Inc.', 'slug' => 'weecomm', 'status' => Realty::STATUS_ACTIVE, 'registered_at' => now()]);
         $other = Realty::create(['name' => 'Other Realty', 'slug' => 'other', 'status' => Realty::STATUS_ACTIVE, 'registered_at' => now()]);
         RequirementType::create(['realty_id' => $other->id, 'name' => 'Their own list', 'applies' => 'all', 'sort' => 10]);
 
@@ -26,7 +26,7 @@ class BuyerRequirementsTest extends TestCase
         RequirementType::seedMissing();
 
         $this->assertSame(['Valid government ID', 'Proof of income'], RequirementType::where('realty_id', $johndorf->id)->orderBy('sort')->limit(2)->pluck('name')->all());
-        $this->assertSame(7, RequirementType::where('realty_id', $johndorf->id)->count());
+        $this->assertSame(2, RequirementType::where('realty_id', $johndorf->id)->count());
         $this->assertSame(['Their own list'], RequirementType::where('realty_id', $other->id)->pluck('name')->all());
 
         // An offer sent before the list existed shows it to the buyer now.

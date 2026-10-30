@@ -24,7 +24,7 @@ class AgentInvitationMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: "{$this->realty->name} invited you to join on jvconline");
+        return new Envelope(subject: "{$this->realty->name} invited you to join as an agent");
     }
 
     public function content(): Content
